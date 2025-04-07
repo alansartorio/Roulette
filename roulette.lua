@@ -56,7 +56,7 @@ function Roulette.new()
         local centerShape = love.physics.newCircleShape(centerRadius)
         local centerBody = love.physics.newBody(new.world, 0, 0, "static")
         new.center = love.physics.newFixture(centerBody, centerShape)
-        new.center:setRestitution(1)
+        new.center:setRestitution(0.5)
         new.center:setUserData("Center")
 
         new.splits = {}
@@ -67,11 +67,11 @@ function Roulette.new()
         local function add_split(text, position, total)
             local split_angle = ((position + 1) / total) * math.pi * 2
             local angle = ((position + 0.5) / total) * math.pi * 2
-            local size = Vector.new(5, 1)
+            local size = Vector.new(5, 2)
             local start = Vector.new(centerRadius + size.x / 2, 0):rotate(split_angle)
 
-            --local shape = love.physics.newRectangleShape(start.x, start.y, 0.01, 0.001, angle)
-            local shape = love.physics.newRectangleShape(0, 0, size.x, size.y)
+            local shape = love.physics.newPolygonShape(-size.x / 2, size.y / 2, size.x / 2, 0, -size.x / 2, -size.y / 2)
+            --local shape = love.physics.newRectangleShape(0, 0, size.x, size.y)
             local body = love.physics.newBody(new.world, start.x, start.y, "static")
             body:setAngle(split_angle)
             local fixture = love.physics.newFixture(body, shape)
@@ -110,7 +110,7 @@ function Roulette.new()
         ballBody:setLinearDamping(0.1)
 
         new.ball = love.physics.newFixture(ballBody, ballShape)
-        new.ball:setRestitution(1)
+        new.ball:setRestitution(0.5)
         new.ball:setUserData("Ball")
     end
 
@@ -154,9 +154,12 @@ function physic_draw.draw_rect(fixture, mode)
 end
 
 function Roulette:throw_ball()
-    local speed = love.math.random(1000, 2000)
-    self.ball:getBody():setLinearVelocity(0, speed)
-    self.ball:getBody():setPosition(40, 0)
+    local speed = love.math.random(2000, 3000)
+    local angle = love.math.random(0, math.pi * 2)
+    local position = Vector.new_polar(40, angle)
+    local velocity = Vector.new_polar(speed, angle + math.pi / 2)
+    self.ball:getBody():setLinearVelocity(velocity:unpack())
+    self.ball:getBody():setPosition(position:unpack())
 end
 
 function Roulette:update(dt)
@@ -205,9 +208,10 @@ function Roulette:draw()
 end
 
 function Roulette:get_position()
-    local ball_angle = Vector.new(self.ball:getBody():getPosition()):angle()
+    local ball_angle = Vector.new(self.ball:getBody():getPosition()):angle() % (math.pi * 2)
     for i, slit in ipairs(self.splits) do
         if ball_angle < slit.split_angle then
+            --print(slit.text)
             return slit.text
         end
     end

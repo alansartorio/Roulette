@@ -17,7 +17,7 @@ function love.load()
     })
     roulette = Roulette.new()
     roulette.roll_finished:subscribe(function(n)
-        print("finished", n)
+        print(n)
         roulette:throw_ball()
     end)
 
@@ -25,6 +25,8 @@ function love.load()
 end
 
 function love.update(dt)
+    --for _ = 1, 100000 do
+    --end
     roulette:update(dt)
 end
 
