@@ -178,8 +178,6 @@ function Roulette:update(dt)
 end
 
 function Roulette:draw()
-    local meter_to_pix = 7
-    love.graphics.scale(meter_to_pix, meter_to_pix)
     --love.graphics.rotate(roulette_angle)
     love.graphics.setLineWidth(0.1)
     love.graphics.setColor(255, 255, 255)

@@ -35,6 +35,13 @@ function love.resize()
 end
 
 function love.draw()
-    love.graphics.translate(win.x / 2, win.y / 2)
+    local roulette_start = 0
+    local table_start = win.x * split
+
+    love.graphics.push()
+    love.graphics.translate((table_start - roulette_start) / 2, win.y / 2)
+    local meter_to_pix = win.x / 400
+    love.graphics.scale(meter_to_pix, meter_to_pix)
     roulette:draw()
+    love.graphics.pop()
 end
