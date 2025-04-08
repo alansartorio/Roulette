@@ -16,23 +16,44 @@ RouletteTableData.__index = RouletteTableData
 
 ---@class NumberProps
 ---@field grid_pos nil|GridPosition
----@field color Color
+---@field color nil|Color
+---@field parity nil|0|1
+---@field number integer
+
+---@param t table
+---@param v any
+local function table_contains(t, v)
+    for _, value in ipairs(t) do
+        if value == v then
+            return true
+        end
+    end
+
+    return false
+end
 
 ---@type table<string, NumberProps>
 local number_props = {
-    ["0"] = { grid_pos = nil, color = nil, parity = nil },
-    ["00"] = { grid_pos = nil, color = nil, parity = nil },
+    ["0"] = { grid_pos = nil, color = nil, parity = nil, number = 0 },
+    ["00"] = { grid_pos = nil, color = nil, parity = nil, number = 0 },
 }
+
 for i = 1, 36 do
     local x = math.floor((i - 1) / 3)
     local y = (i - 1) % 3
-    local third = math.floor(x / 12)
+    local third = math.floor(x / 4)
     number_props[tostring(i)] = {
         grid_pos = { x = x, y = y, third = third },
         -- TODO: set
-        color = "black",
-        parity = i % 2
+        color = "red",
+        parity = i % 2,
+        number = i
     }
+end
+
+local black_numbers = { 2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35 }
+for _, number in pairs(black_numbers) do
+    number_props[tostring(number)].color = "black"
 end
 
 function RouletteTableData.new()
@@ -118,19 +139,22 @@ function RouletteTableData:bid_even(bid)
     self:bid_parity(bid, 0)
 end
 
----@param t table
----@param v any
-local function table_contains(t, v)
-    for _, value in ipairs(t) do
-        if value == v then
-            return true
-        end
-    end
+function RouletteTableData:bid_range(bid, low, high)
+    self:bid_filter(bid, function(props)
+        return props.number >= low and props.number <= high
+    end)
+end
 
-    return false
+function RouletteTableData:bid_low(bid)
+    self:bid_range(bid, 1, 18)
+end
+
+function RouletteTableData:bid_high(bid)
+    self:bid_range(bid, 19, 36)
 end
 
 ---@param number string
+---@return number
 function RouletteTableData:get_return(number)
     local bid_for_number = 0
     for _, bid in ipairs(self.bids) do

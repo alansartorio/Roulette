@@ -15,8 +15,10 @@ local Vector = require("vector")
 ---@field splits Split[]
 ---@field ball_center_collisions Subject
 ---@field roll_finished Observable
+---@field roll_started Observable
 ---@field scheduler CooperativeScheduler
 ---@field roulette_angle number
+---@field rolling boolean
 local Roulette = {}
 Roulette.__index = Roulette
 
@@ -125,6 +127,11 @@ function Roulette.new()
         :distinctUntilChanged()
         :debounce(1, new.scheduler)
         :filter(function(v) return v ~= nil end)
+    new.roll_finished
+        :subscribe(function()
+            new.rolling = false
+        end)
+    new.rolling = false
 
     return new
 end
@@ -154,6 +161,7 @@ function physic_draw.draw_rect(fixture, mode)
 end
 
 function Roulette:throw_ball()
+    self.rolling = true
     local speed = love.math.random(2000, 3000)
     local angle = love.math.random(0, math.pi * 2)
     local position = Vector.new_polar(40, angle)
@@ -173,22 +181,24 @@ function Roulette:update(dt)
         self.ball:getBody():applyForce(pos:unpack())
     end
 
-    apply_force()
-    self.world:update(dt)
+    if self.rolling then
+        apply_force()
+        self.world:update(dt)
+    end
 end
 
 function Roulette:draw()
     --love.graphics.rotate(roulette_angle)
     love.graphics.setLineWidth(0.1)
-    love.graphics.setColor(255, 255, 255)
+    love.graphics.setColor(1, 1, 1)
 
     -- roulette
     love.graphics.circle("line", 0, 0, 50)
 
-    love.graphics.setColor(255, 0, 0)
+    love.graphics.setColor(1, 0, 0)
     physic_draw.draw_circle(self.ball, "fill")
 
-    love.graphics.setColor(0, 255, 255)
+    love.graphics.setColor(0, 1, 1)
     for i, split in ipairs(self.splits) do
         local text_width = 50
         local text_scale = 0.2
