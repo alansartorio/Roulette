@@ -36,8 +36,6 @@ function love.load()
         :subscribe(function(n)
             money = money + roulette_table.data:get_return(n)
             roulette_table:clear_bids()
-            money = money - 10
-            roulette_table:add_bid({ "even", 1 }, 10)
         end)
 
     roulette_table = RouletteTable.new()
@@ -55,6 +53,22 @@ function get_positioning()
 end
 
 local hover_pos = Vector.new_zero()
+
+function love.mousereleased(x, y, button)
+    local positioning = get_positioning()
+    local mouse = Vector.new(x, y)
+    if button == 1 then
+        local cell = roulette_table:get_cell(mouse - positioning.roulette_table)
+        if roulette.rolling then
+            return
+        end
+        if cell == nil then
+            return
+        end
+        roulette_table:add_bid(cell, 10)
+        money = money - 10
+    end
+end
 
 function love.update(dt)
     local positioning = get_positioning()

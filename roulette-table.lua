@@ -385,6 +385,25 @@ function RouletteTable:draw()
         local y = (3 - i) % 3
         draw_cell(tostring(i), Vector.new(x, y))
     end
+
+    local text_height = love.graphics.getFont():getHeight()
+    for name, amounts in pairs(self.bids) do
+        for index, amount in ipairs(amounts) do
+            local pos = self:get_cell_center({name, index})
+            if pos == nil then
+                goto continue
+            end
+            if amount <= 0 then
+                goto continue
+            end
+            local r = 20
+            love.graphics.setColor(0.5, 0.5, 0.5, 1)
+            love.graphics.circle("fill", pos.x, pos.y, r)
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.printf(tostring(amount), pos.x - r, pos.y, r * 2, "center", 0, 1, 1, 0, text_height / 2)
+            ::continue::
+        end
+    end
 end
 
 return RouletteTable
