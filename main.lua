@@ -14,6 +14,12 @@ local roulette_table
 
 local scheduler = rx.CooperativeScheduler.create()
 local money = 1000
+local total_bid = 0
+local transaction_log = {}
+
+local function add_to_log(transaction)
+    table.insert(transaction_log, tostring(transaction))
+end
 
 function love.load()
     win = LoveUtils.get_win_shape()
@@ -30,12 +36,16 @@ function love.load()
             for _, bid in ipairs(roulette_table.data.bids) do
                 print(bid.amount, #bid.numbers)
             end
+            add_to_log("-" .. total_bid)
             roulette:throw_ball()
         end)
     roulette.roll_finished
         :subscribe(function(n)
-            money = money + roulette_table.data:get_return(n)
+            local win_amount = roulette_table.data:get_return(n)
+            money = money + win_amount
+            total_bid = 0
             roulette_table:clear_bids()
+            add_to_log("+" .. win_amount)
         end)
 
     roulette_table = RouletteTable.new()
@@ -52,7 +62,8 @@ function get_positioning()
     }
 end
 
-local hover_pos = Vector.new_zero()
+---@type nil|Vector
+local hover_pos = nil
 
 function love.mousereleased(x, y, button)
     local positioning = get_positioning()
@@ -65,8 +76,10 @@ function love.mousereleased(x, y, button)
         if cell == nil then
             return
         end
-        roulette_table:add_bid(cell, 10)
-        money = money - 10
+        local bid_size = 10
+        roulette_table:add_bid(cell, bid_size)
+        money = money - bid_size
+        total_bid = total_bid + bid_size
     end
 end
 
@@ -84,7 +97,10 @@ function love.update(dt)
         hover_pos = roulette_table:get_cell_center(cell)
     else
         print(cell)
+        hover_pos = nil
     end
+    local number = roulette:get_position()
+    roulette_table:set_highlight(number)
 end
 
 function love.resize()
@@ -93,7 +109,6 @@ end
 
 function love.draw()
     local positioning = get_positioning()
-    love.graphics.print(money, 0, 0)
 
     love.graphics.push()
     love.graphics.translate(positioning.roulette:unpack())
@@ -106,6 +121,15 @@ function love.draw()
     love.graphics.translate(positioning.roulette_table:unpack())
     roulette_table:draw()
     love.graphics.setColor(1, 1, 1, 0.3)
-    love.graphics.circle("fill", hover_pos.x, hover_pos.y, 20)
+    if hover_pos ~= nil then
+        love.graphics.circle("fill", hover_pos.x, hover_pos.y, 20)
+    end
     love.graphics.pop()
+
+    local transaction_log_str = "money: " .. money .. "\nlog: \n"
+    for _, transaction in ipairs(transaction_log) do
+        transaction_log_str = transaction_log_str .. transaction .. "\n"
+    end
+
+    love.graphics.print(transaction_log_str)
 end

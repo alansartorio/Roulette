@@ -4,6 +4,7 @@ local RouletteTableData = require("roulette-table-data")
 ---@class RouletteTable
 ---@field bids table<BidKey, (0)[]>
 ---@field data RouletteTableData
+---@field highlight string
 local RouletteTable = {
     cell_size = 50,
 }
@@ -237,6 +238,11 @@ function RouletteTable:clear_bids()
     end
 end
 
+---@param number string
+function RouletteTable:set_highlight(number)
+    self.highlight = number
+end
+
 function RouletteTable:start()
     self.data:reset_bid()
 
@@ -266,8 +272,8 @@ function RouletteTable:start()
     end
 
     local function get_xy(h, index)
-        local x = math.floor(index / h)
-        local y = ((h - 1) - index) % h
+        local x = math.floor((index - 1) / h)
+        local y = (h - index) % h
         return Vector.new(x, y)
     end
     local function get_number(pos)
@@ -285,26 +291,33 @@ function RouletteTable:start()
     for index, amount in ipairs(self.bids.numbers_double_vertical) do
         if amount > 0 then
             local pos = get_xy(2, index)
-            self.data:bid_number(amount, tostring(get_number(pos)))
-            self.data:bid_number(amount, tostring(get_number(pos + bottom)))
+            self.data:bid_numbers(amount, {
+                tostring(get_number(pos)),
+                tostring(get_number(pos + bottom))
+            })
         end
     end
 
     for index, amount in ipairs(self.bids.numbers_double_horizontal) do
         if amount > 0 then
             local pos = get_xy(3, index)
-            self.data:bid_number(amount, tostring(get_number(pos)))
-            self.data:bid_number(amount, tostring(get_number(pos + right)))
+            self.data:bid_numbers(amount, {
+                tostring(get_number(pos)),
+                tostring(get_number(pos + right))
+            })
         end
     end
 
     for index, amount in ipairs(self.bids.numbers_quad) do
         if amount > 0 then
             local pos = get_xy(2, index)
-            self.data:bid_number(amount, tostring(get_number(pos)))
-            self.data:bid_number(amount, tostring(get_number(pos + right)))
-            self.data:bid_number(amount, tostring(get_number(pos + bottom)))
-            self.data:bid_number(amount, tostring(get_number(pos + right + bottom)))
+            print(get_number(pos))
+            self.data:bid_numbers(amount, {
+                tostring(get_number(pos)),
+                tostring(get_number(pos + right)),
+                tostring(get_number(pos + bottom)),
+                tostring(get_number(pos + right + bottom)),
+            })
         end
     end
 
@@ -362,7 +375,11 @@ function RouletteTable:draw()
     local font_height = love.graphics.getFont():getHeight()
 
     local function draw_cell_exact(text, pos, size)
-        love.graphics.setColor(1, 1, 1)
+        if text == self.highlight then
+            love.graphics.setColor(255, 0, 0)
+        else
+            love.graphics.setColor(1, 1, 1)
+        end
         local x, y = pos:unpack()
         local w, h = size:unpack()
         love.graphics.printf(text, x, y + size.y / 2, w, "center", 0, 1, 1, 0, font_height / 2)
@@ -389,7 +406,7 @@ function RouletteTable:draw()
     local text_height = love.graphics.getFont():getHeight()
     for name, amounts in pairs(self.bids) do
         for index, amount in ipairs(amounts) do
-            local pos = self:get_cell_center({name, index})
+            local pos = self:get_cell_center({ name, index })
             if pos == nil then
                 goto continue
             end
