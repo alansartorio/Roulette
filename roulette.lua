@@ -1,6 +1,9 @@
 local rx = require("lib/reactivex")
 local Vector = require("vector")
 
+local number_props = require("number-props")
+local colors = require("colors")
+
 ---@class Split
 ---@field text string
 ---@field angle number
@@ -19,7 +22,11 @@ local Vector = require("vector")
 ---@field scheduler CooperativeScheduler
 ---@field roulette_angle number
 ---@field rolling boolean
-local Roulette = {}
+---@field font love.Font
+local Roulette = {
+    roulette_radius = 50,
+    center_radius = 30
+}
 Roulette.__index = Roulette
 
 function Roulette.new()
@@ -27,6 +34,7 @@ function Roulette.new()
 
     new.scheduler = rx.CooperativeScheduler.create()
 
+    new.font = love.graphics.newFont(18)
 
     new.world = love.physics.newWorld(0, 0, true)
     new.world:setCallbacks(
@@ -53,7 +61,7 @@ function Roulette.new()
         local circleBody = love.physics.newBody(new.world, 0, 0, "static")
         new.roulette = love.physics.newFixture(circleBody, circleShape)
 
-        local centerRadius = 30
+        local centerRadius = new.center_radius
 
         local centerShape = love.physics.newCircleShape(centerRadius)
         local centerBody = love.physics.newBody(new.world, 0, 0, "static")
@@ -110,7 +118,7 @@ function Roulette.new()
             circleBody:getY(),
             ballBody:getX(),
             ballBody:getY(),
-            50)
+            new.roulette_radius)
     end
 
 
@@ -197,14 +205,20 @@ function Roulette:update(dt)
 end
 
 function Roulette:draw()
+    love.graphics.setFont(self.font)
     --love.graphics.rotate(roulette_angle)
     love.graphics.setLineWidth(0.1)
     love.graphics.setColor(1, 1, 1)
 
     -- roulette
-    love.graphics.circle("line", 0, 0, 50)
+    love.graphics.setColor(0.8, 0.8, 0.8)
+    love.graphics.circle("fill", 0, 0, self.roulette_radius)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.circle("line", 0, 0, self.roulette_radius)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.circle("line", 0, 0, self.center_radius)
 
-    love.graphics.setColor(1, 0, 0)
+    love.graphics.setColor(0.3, 0.3, 0.3)
     physic_draw.draw_circle(self.ball, "fill")
 
     love.graphics.setColor(0, 1, 1)
@@ -216,10 +230,11 @@ function Roulette:draw()
         love.graphics.rotate(split.angle)
         love.graphics.translate(30, 0)
         love.graphics.rotate(math.pi / 2)
-        --local pos = Vector.new(30, 0):rotate(split.angle) - Vector.new(text_width * text_scale / 2, 0)
+        love.graphics.translate(0, -4)
+        love.graphics.setColor(colors[number_props[split.text].color or "green"])
         love.graphics.printf(split.text, 0, 0, text_width, "center", 0, 0.2, 0.2, text_width / 2, text_height / 2)
-        --love.graphics.printf(split.text, pos.x, pos.y, text_width, "center", math.pi / 2, 0.2, 0.2, 0, text_height / 2)
         love.graphics.pop()
+        love.graphics.setColor(1, 1, 1)
         physic_draw.draw_rect(split.fixture, "fill")
     end
 end

@@ -17,6 +17,7 @@ local money = 1000
 local total_bid = 0
 local transaction_log = {}
 local user_bidded = rx.Subject.create()
+local log_font
 
 local function add_to_log(transaction)
     table.insert(transaction_log, tostring(transaction))
@@ -28,6 +29,7 @@ function love.load()
         resizable = true,
         fullscreen = false
     })
+    local positioning = get_positioning()
     roulette = Roulette.new()
     roulette.roll_finished
         :startWith(nil)
@@ -54,6 +56,9 @@ function love.load()
         end)
 
     roulette_table = RouletteTable.new()
+    roulette_table:resize(positioning.roulette_table.cell_size)
+
+    log_font = love.graphics.newFont(20)
 end
 
 ---@class Box
@@ -97,7 +102,6 @@ function get_positioning()
     local table_size = find_size_for_aspect_ratio(table_space_box.size, table_cell_size)
     local table_box = center_box_in_space(table_size, table_space_box)
     local cell_size = (table_size / table_cell_size).x
-    roulette_table.cell_size = cell_size
 
     return {
         roulette = Vector.new((table_start - roulette_start) / 2, win.y / 2),
@@ -154,6 +158,9 @@ end
 
 function love.resize()
     win = LoveUtils.get_win_shape()
+
+    local positioning = get_positioning()
+    roulette_table:resize(positioning.roulette_table.cell_size)
 end
 
 function love.draw()
@@ -180,6 +187,7 @@ function love.draw()
         transaction_log_str = transaction_log_str .. transaction .. "\n"
     end
 
+    love.graphics.setFont(log_font)
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.print(transaction_log_str)
 end

@@ -1,6 +1,9 @@
 local Vector = require("vector")
 local RouletteTableData = require("roulette-table-data")
 
+local number_props = require("number-props")
+local colors = require("colors")
+
 ---@class Button
 ---@field pos Vector
 ---@field size Vector
@@ -477,8 +480,8 @@ function RouletteTable:draw_bids()
             if amount <= 0 then
                 goto continue
             end
-            local r = 20
-            love.graphics.setColor(0.5, 0.5, 0.5, 1)
+            local r = self.cell_size / 2 * 0.6
+            love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
             love.graphics.circle("fill", pos.x, pos.y, r)
             love.graphics.setColor(1, 1, 1, 1)
             love.graphics.printf(tostring(amount), pos.x - r, pos.y, r * 2, "center", 0, 1, 1, 0, text_height / 2)
@@ -494,43 +497,55 @@ function RouletteTable:draw_buttons()
     ---@param text string
     ---@param pos Vector
     ---@param size Vector
+    ---@param color "black"|"red"|nil
     ---@param only_highlight nil|boolean
-    local function draw_cell_exact(text, pos, size, only_highlight)
+    local function draw_cell_exact(text, pos, size, color, only_highlight)
         only_highlight = only_highlight or false
         if only_highlight and text ~= self.highlight then
             return
         end
-        if only_highlight then
-            love.graphics.setColor(255, 0, 0)
-            love.graphics.setLineWidth(4)
-        else
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.setLineWidth(1)
+        local colorTuple = { 1, 1, 1, 1 }
+        if color == nil then
+            colorTuple = colors.green
+        elseif color == "black" then
+            colorTuple = colors.black
+        elseif color == "red" then
+            colorTuple = colors.red
         end
+        if only_highlight then
+            colorTuple = { 1, 1, 1, 0.3 }
+        end
+        love.graphics.setColor(colorTuple)
         pos = pos * cell_size
         size = size * cell_size
         local x, y = pos:unpack()
         local w, h = size:unpack()
-        love.graphics.printf(text, x, y + size.y / 2, w, "center", 0, 1, 1, 0, font_height / 2)
+        love.graphics.rectangle("fill", x, y, w, h)
+        love.graphics.setColor({ 0, 0, 0, 1 })
         love.graphics.rectangle("line", x, y, w, h)
+
+        love.graphics.setColor({ 1, 1, 1, 1 })
+        love.graphics.printf(text, x, y + size.y / 2, w, "center", 0, 1, 1, 0, font_height / 2)
     end
 
     ---@param text string
     ---@param pos Vector
+    ---@param color "black"|"red"|nil
     ---@param only_highlight nil|boolean
-    local function draw_cell(text, pos, only_highlight)
+    local function draw_cell(text, pos, color, only_highlight)
         pos = pos + Vector.new(1, 0) -- add padding for 0 and 00
-        draw_cell_exact(text, pos, Vector.new(1, 1), only_highlight or false)
+        draw_cell_exact(text, pos, Vector.new(1, 1), color, only_highlight or false)
     end
 
     local function draw_all_buttons(only_highlight)
         for _, button in ipairs(self.buttons) do
-            draw_cell_exact(button.text, button.pos, button.size, only_highlight)
+            draw_cell_exact(button.text, button.pos, button.size, nil, only_highlight)
         end
         for i = 1, 36 do
             local x = math.floor((i - 1) / 3)
             local y = (3 - i) % 3
-            draw_cell(tostring(i), Vector.new(x, y), only_highlight)
+            local number_text = tostring(i)
+            draw_cell(number_text, Vector.new(x, y), number_props[number_text].color, only_highlight)
         end
     end
 
@@ -538,7 +553,13 @@ function RouletteTable:draw_buttons()
     draw_all_buttons(true)
 end
 
+function RouletteTable:resize(cell_size)
+    self.cell_size = cell_size
+    self.font = love.graphics.newFont(self.cell_size / 4)
+end
+
 function RouletteTable:draw()
+    love.graphics.setFont(self.font)
     self:draw_buttons()
     self:draw_bids()
 end
