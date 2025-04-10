@@ -1,6 +1,7 @@
 local rx = require("lib/reactivex")
 local Vector = require("vector")
 local LoveUtils = require("love-utils")
+local Tracker = require("tracker")
 local Roulette = require("roulette")
 local RouletteTable = require("roulette-table")
 
@@ -12,12 +13,17 @@ local roulette
 ---@type RouletteTable
 local roulette_table
 
+local fast_debug = false
+local interaction_timeout = fast_debug and 0.1 or 5
+
 local scheduler = rx.CooperativeScheduler.create()
 local money = 1000
 local total_bid = 0
 local transaction_log = {}
 local user_bidded = rx.Subject.create()
 local log_font
+---@type Tracker
+local tracker
 
 local function add_to_log(transaction)
     table.insert(transaction_log, tostring(transaction))
@@ -29,12 +35,13 @@ function love.load()
         resizable = true,
         fullscreen = false
     })
+    tracker = Tracker.new()
     local positioning = get_positioning()
     roulette = Roulette.new()
     roulette.roll_finished
         :startWith(nil)
         :merge(user_bidded)
-        :debounce(5, scheduler)
+        :debounce(interaction_timeout, scheduler)
         :map(function()
             return nil
         end)
@@ -53,6 +60,7 @@ function love.load()
             total_bid = 0
             roulette_table:clear_bids()
             add_to_log("+" .. win_amount)
+            tracker:register(n)
         end)
 
     roulette_table = RouletteTable.new()
@@ -141,9 +149,13 @@ function love.update(dt)
 
     scheduler:update(dt)
 
-    --for _ = 1, 100000 do
-    --end
-    roulette:update(dt)
+    if fast_debug then
+        for _ = 1, 1000 do
+            roulette:update(0.016)
+        end
+    else
+        roulette:update(dt)
+    end
     local cell = roulette_table:get_cell(Vector.new(love.mouse.getPosition()) - positioning.roulette_table.pos)
     if cell ~= nil then
         --print(unpack(cell))
@@ -191,4 +203,9 @@ function love.draw()
     love.graphics.setFont(log_font)
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.print(transaction_log_str)
+
+    love.graphics.push()
+    love.graphics.translate(win.x / 2, 0)
+    tracker:draw()
+    love.graphics.pop()
 end
