@@ -25,7 +25,8 @@ local colors = require("colors")
 ---@field font love.Font
 local Roulette = {
     roulette_radius = 50,
-    center_radius = 30
+    center_radius = 30,
+    ball_radius = 1.3,
 }
 Roulette.__index = Roulette
 
@@ -118,12 +119,12 @@ function Roulette.new()
             circleBody:getY(),
             ballBody:getX(),
             ballBody:getY(),
-            new.roulette_radius)
+            new.roulette_radius - new.ball_radius)
     end
 
 
     local function create_ball()
-        local ballShape = love.physics.newCircleShape(1.3)
+        local ballShape = love.physics.newCircleShape(new.ball_radius)
         local ballBody = love.physics.newBody(new.world, 40, 0, "dynamic")
 
         ballBody:setLinearDamping(0.1)
