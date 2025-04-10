@@ -481,9 +481,9 @@ function RouletteTable:draw_bids()
                 goto continue
             end
             local r = self.cell_size / 2 * 0.6
-            love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
+            love.graphics.setColor(1, 0.9, 0, 0.8)
             love.graphics.circle("fill", pos.x, pos.y, r)
-            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.setColor(0, 0, 0, 1)
             love.graphics.printf(tostring(amount), pos.x - r, pos.y, r * 2, "center", 0, 1, 1, 0, text_height / 2)
             ::continue::
         end
