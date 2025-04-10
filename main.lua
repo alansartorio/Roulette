@@ -183,7 +183,8 @@ function love.draw()
     love.graphics.pop()
 
     local transaction_log_str = "money: $" .. money .. "\n" .. "log: \n"
-    for _, transaction in ipairs(transaction_log) do
+    for i = math.max(1, #transaction_log - 10), #transaction_log do
+        local transaction = transaction_log[i]
         transaction_log_str = transaction_log_str .. transaction .. "\n"
     end
 
