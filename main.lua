@@ -32,9 +32,6 @@ function love.load()
     roulette.roll_finished
         :startWith(nil)
         :merge(user_bidded)
-        :tap(function ()
-            print("A")
-        end)
         :debounce(5, scheduler)
         :map(function()
             return nil
