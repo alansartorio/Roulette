@@ -85,10 +85,12 @@ function love.mousereleased(x, y, button)
             return
         end
         local bid_size = 10
-        roulette_table:add_bid(cell, bid_size)
-        money = money - bid_size
-        total_bid = total_bid + bid_size
-        user_bidded(nil)
+        if money >= bid_size then
+            roulette_table:add_bid(cell, bid_size)
+            money = money - bid_size
+            total_bid = total_bid + bid_size
+            user_bidded(nil)
+        end
     end
 end
 
@@ -135,7 +137,7 @@ function love.draw()
     end
     love.graphics.pop()
 
-    local transaction_log_str = "money: " .. money .. "\nlog: \n"
+    local transaction_log_str = "money: $" .. money .. "\n" .. "log: \n"
     for _, transaction in ipairs(transaction_log) do
         transaction_log_str = transaction_log_str .. transaction .. "\n"
     end

@@ -73,13 +73,33 @@ function RouletteTable.new()
             text = "0",
             cell = { "zero", 1 }
         },
+
+        -- row bids
+        {
+            pos = Vector.new(13, 0),
+            size = Vector.new(1, 1),
+            text = "2 to 1",
+            cell = { "rows", 3 }
+        },
+        {
+            pos = Vector.new(13, 1),
+            size = Vector.new(1, 1),
+            text = "2 to 1",
+            cell = { "rows", 2 }
+        },
+        {
+            pos = Vector.new(13, 2),
+            size = Vector.new(1, 1),
+            text = "2 to 1",
+            cell = { "rows", 1 }
+        },
     }
 
     -- first row after numbers
     local thirds = {
-        "1 to 12",
-        "13 to 24",
-        "25 to 36",
+        "1st 12",
+        "2nd 12",
+        "3rd 12",
     }
     for i, third in ipairs(thirds) do
         table.insert(new.buttons, {
@@ -203,6 +223,10 @@ function RouletteTable:get_cell(pos)
     if index.x < 0 or index.x > 11 or
         index.y < 0 or index.y > 2 then
         return nil
+    end
+
+    if right and index.x == 11 then
+        right = false
     end
 
     if bottom and right then
