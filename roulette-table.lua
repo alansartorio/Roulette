@@ -1,10 +1,17 @@
 local Vector = require("vector")
 local RouletteTableData = require("roulette-table-data")
 
+---@class Button
+---@field pos Vector
+---@field size Vector
+---@field text string
+---@field cell CompleteBidKey
+
 ---@class RouletteTable
 ---@field bids table<BidKey, (0)[]>
 ---@field data RouletteTableData
 ---@field highlight string
+---@field buttons Button[]
 local RouletteTable = {
     cell_size = 50,
 }
@@ -42,8 +49,82 @@ end
 ---| "high"
 ---| "low"
 
+---@alias CompleteBidKey [BidKey, integer]
+
+---@param self CompleteBidKey
+---@param other CompleteBidKey
+local function same_bidkey(self, other)
+    return self[1] == other[1] and self[2] == other[2]
+end
+
 function RouletteTable.new()
     local new = setmetatable({}, RouletteTable)
+
+    new.buttons = {
+        {
+            pos = Vector.new(0, 0),
+            size = Vector.new(1, 1.5),
+            text = "00",
+            cell = { "double_zero", 1 }
+        },
+        {
+            pos = Vector.new(0, 1.5),
+            size = Vector.new(1, 1.5),
+            text = "0",
+            cell = { "zero", 1 }
+        },
+    }
+
+    -- first row after numbers
+    local thirds = {
+        "1 to 12",
+        "13 to 24",
+        "25 to 36",
+    }
+    for i, third in ipairs(thirds) do
+        table.insert(new.buttons, {
+            pos = Vector.new(1 + (i - 1) * 4, 3),
+            size = Vector.new(4, 1),
+            text = third,
+            cell = { "thirds", i }
+        })
+    end
+
+    -- second row after numbers
+    local halves = {
+        {
+            text = "1 to 18",
+            cell = { "low", 1 }
+        },
+        {
+            text = "even",
+            cell = { "even", 1 }
+        },
+        {
+            text = "red",
+            cell = { "red", 1 }
+        },
+        {
+            text = "black",
+            cell = { "black", 1 }
+        },
+        {
+            text = "odd",
+            cell = { "odd", 1 }
+        },
+        {
+            text = "19 to 36",
+            cell = { "high", 1 }
+        },
+    }
+    for i, half in ipairs(halves) do
+        table.insert(new.buttons, {
+            pos = Vector.new(1 + (i - 1) * 2, 4),
+            size = Vector.new(2, 1),
+            text = half.text,
+            cell = half.cell,
+        })
+    end
 
     new.data = RouletteTableData.new()
     new.bids = {
@@ -75,7 +156,7 @@ function RouletteTable.new()
 end
 
 ---@param pos Vector
----@return nil | [BidKey, integer]
+---@return nil | CompleteBidKey
 function RouletteTable:get_cell(pos)
     local cell_size = self.cell_size
     local zero_height = cell_size * 3 / 2
@@ -83,15 +164,17 @@ function RouletteTable:get_cell(pos)
     local index_real = pos / cell_size
     local index = index_real:floor()
 
-    if index.x == 0 then
-        -- zero or double zero
-        if pos.y < zero_height then
-            return { "double_zero", 1 }
-        elseif pos.y < zero_height * 2 then
-            return { "zero", 1 }
-        else
-            return nil
+    for _, button in ipairs(self.buttons) do
+        if index_real.x >= button.pos.x and
+            index_real.x < button.pos.x + button.size.x and
+            index_real.y >= button.pos.y and
+            index_real.y < button.pos.y + button.size.y then
+            return button.cell
         end
+    end
+
+    if index.x < 1 or index.y < 0 then
+        return nil
     end
 
     index.x = index.x - 1
@@ -100,13 +183,13 @@ function RouletteTable:get_cell(pos)
     local right = false
     local bottom = false
 
-    if index_real.x % 1 < border then
+    if index_real.x % 1 < border and index.x > 0 then
         index.x = index.x - 1
         right = true
     elseif index_real.x % 1 > 1 - border then
         right = true
     end
-    if index_real.y % 1 < border then
+    if index_real.y % 1 < border and index.y > 0 then
         index.y = index.y - 1
         bottom = true
     elseif index_real.y % 1 > 1 - border then
@@ -166,27 +249,16 @@ function RouletteTable:get_cell(pos)
     return { "numbers_single", get_index(3) }
 end
 
----@param cell [BidKey, integer]
+---@param cell CompleteBidKey
 function RouletteTable:get_cell_center(cell)
     local cell_size = self.cell_size
 
     local name, index = unpack(cell)
-    if name == "double_zero" then
-        return Vector.new(0.5, 1.5 / 2) * cell_size
-    elseif name == "zero" then
-        return Vector.new(0.5, 1.5 * 3 / 2) * cell_size
-    elseif name == "black" then
-        return Vector.new_zero()
-    elseif name == "red" then
-        return Vector.new_zero()
-    elseif name == "even" then
-        return Vector.new_zero()
-    elseif name == "odd" then
-        return Vector.new_zero()
-    elseif name == "low" then
-        return Vector.new_zero()
-    elseif name == "high" then
-        return Vector.new_zero()
+
+    for _, button in ipairs(self.buttons) do
+        if same_bidkey(button.cell, cell) then
+            return (button.pos + button.size / 2) * cell_size
+        end
     end
 
     index = index - 1
@@ -217,14 +289,14 @@ function RouletteTable:get_cell_center(cell)
     end
 end
 
----@param cell [BidKey, integer]
+---@param cell CompleteBidKey
 ---@param amount number
 function RouletteTable:add_bid(cell, amount)
     local name, index = unpack(cell)
     self.bids[name][index] = self.bids[name][index] + amount
 end
 
----@param cell [BidKey, integer]
+---@param cell CompleteBidKey
 function RouletteTable:clear_bid(cell)
     local name, index = unpack(cell)
     self.bids[name][index] = 0
@@ -380,6 +452,8 @@ function RouletteTable:draw()
         else
             love.graphics.setColor(1, 1, 1)
         end
+        pos = pos * cell_size
+        size = size * cell_size
         local x, y = pos:unpack()
         local w, h = size:unpack()
         love.graphics.printf(text, x, y + size.y / 2, w, "center", 0, 1, 1, 0, font_height / 2)
@@ -389,14 +463,15 @@ function RouletteTable:draw()
     ---@param text string
     ---@param pos Vector
     local function draw_cell(text, pos)
-        pos = pos * cell_size +
-            Vector.new(cell_size, 0) -- add padding for 0 and 00
-        draw_cell_exact(text, pos, Vector.new(cell_size, cell_size))
+        pos = pos + Vector.new(1, 0) -- add padding for 0 and 00
+        draw_cell_exact(text, pos, Vector.new(1, 1))
     end
 
     local zero_height = cell_size * 3 / 2
-    draw_cell_exact("0", Vector.new(0, 0), Vector.new(cell_size, zero_height))
-    draw_cell_exact("00", Vector.new(0, zero_height), Vector.new(cell_size, zero_height))
+    for _, button in ipairs(self.buttons) do
+        draw_cell_exact(button.text, button.pos, button.size)
+    end
+    --draw_cell_exact("00", Vector.new(0, zero_height), Vector.new(cell_size, zero_height))
     for i = 1, 36 do
         local x = math.floor((i - 1) / 3)
         local y = (3 - i) % 3
