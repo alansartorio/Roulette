@@ -13,7 +13,7 @@ local roulette
 ---@type RouletteTable
 local roulette_table
 
-local fast_debug = false
+local fast_debug = true
 local interaction_timeout = fast_debug and 0.1 or 5
 
 local scheduler = rx.CooperativeScheduler.create()
@@ -144,9 +144,24 @@ function love.mousereleased(x, y, button)
     end
 end
 
-function love.update(dt)
+function love.mousemoved()
     local positioning = get_positioning()
 
+    local cell = roulette_table:get_cell(Vector.new(love.mouse.getPosition()) - positioning.roulette_table.pos)
+    if cell ~= nil then
+        --print(unpack(cell))
+        hover_pos = roulette_table:get_cell_center(cell)
+    else
+        --print(cell)
+        hover_pos = nil
+    end
+end
+
+function love.touchreleased()
+    hover_pos = nil
+end
+
+function love.update(dt)
     scheduler:update(dt)
 
     if fast_debug then
@@ -155,14 +170,6 @@ function love.update(dt)
         end
     else
         roulette:update(dt)
-    end
-    local cell = roulette_table:get_cell(Vector.new(love.mouse.getPosition()) - positioning.roulette_table.pos)
-    if cell ~= nil then
-        --print(unpack(cell))
-        hover_pos = roulette_table:get_cell_center(cell)
-    else
-        --print(cell)
-        hover_pos = nil
     end
     local number = roulette:get_position()
     roulette_table:set_highlight(number)
@@ -205,7 +212,7 @@ function love.draw()
     love.graphics.print(transaction_log_str)
 
     love.graphics.push()
-    love.graphics.translate(win.x / 2, 0)
+    love.graphics.translate(win.x / 4, 0)
     tracker:draw()
     love.graphics.pop()
 end

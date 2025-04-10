@@ -79,7 +79,7 @@ end
 function Tracker:draw_distribution()
     local font_height = self.font:getHeight()
     local width = 20
-    local bar_height = 50
+    local bar_height = 30
     local bar_width = width * 0.8
 
     for i, stat in ipairs(self.last_100_counts_sorted) do
@@ -117,9 +117,9 @@ function Tracker:draw()
     local font_height = self.font:getHeight()
 
     love.graphics.translate(0, 0)
-    self:draw_distribution()
-    love.graphics.translate(0, font_height + 60)
     self:draw_last()
+    love.graphics.translate(20 * 11, 0)
+    self:draw_distribution()
 end
 
 return Tracker
