@@ -13,7 +13,7 @@ local roulette
 ---@type RouletteTable
 local roulette_table
 
-local fast_debug = true
+local fast_debug = false
 local interaction_timeout = fast_debug and 0.1 or 5
 
 local scheduler = rx.CooperativeScheduler.create()
