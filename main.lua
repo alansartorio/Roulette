@@ -16,6 +16,7 @@ local scheduler = rx.CooperativeScheduler.create()
 local money = 1000
 local total_bid = 0
 local transaction_log = {}
+local user_bidded = rx.Subject.create()
 
 local function add_to_log(transaction)
     table.insert(transaction_log, tostring(transaction))
@@ -30,7 +31,14 @@ function love.load()
     roulette = Roulette.new()
     roulette.roll_finished
         :startWith(nil)
-        :delay(5, scheduler)
+        :merge(user_bidded)
+        :tap(function ()
+            print("A")
+        end)
+        :debounce(5, scheduler)
+        :map(function()
+            return nil
+        end)
         :subscribe(function(n)
             roulette_table:start()
             for _, bid in ipairs(roulette_table.data.bids) do
@@ -80,6 +88,7 @@ function love.mousereleased(x, y, button)
         roulette_table:add_bid(cell, bid_size)
         money = money - bid_size
         total_bid = total_bid + bid_size
+        user_bidded(nil)
     end
 end
 
@@ -93,10 +102,10 @@ function love.update(dt)
     roulette:update(dt)
     local cell = roulette_table:get_cell(Vector.new(love.mouse.getPosition()) - positioning.roulette_table)
     if cell ~= nil then
-        print(unpack(cell))
+        --print(unpack(cell))
         hover_pos = roulette_table:get_cell_center(cell)
     else
-        print(cell)
+        --print(cell)
         hover_pos = nil
     end
     local number = roulette:get_position()
@@ -131,5 +140,6 @@ function love.draw()
         transaction_log_str = transaction_log_str .. transaction .. "\n"
     end
 
+    love.graphics.setColor(1, 1, 1, 1)
     love.graphics.print(transaction_log_str)
 end
