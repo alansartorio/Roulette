@@ -48,7 +48,7 @@
         ];
         installPhase = ''
           mkdir -p $out/lib
-          zip $out/lib/${pname}.love *
+          zip -r $out/lib/${pname}.love *
         '';
       };
       devShells.${system}.try = pkgs.mkShell {
