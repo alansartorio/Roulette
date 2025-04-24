@@ -4,6 +4,10 @@ local RouletteTableData = require("roulette-table-data")
 local number_props = require("number-props")
 local colors = require("colors")
 
+---@class Rect
+---@field pos Vector
+---@field size Vector
+
 ---@class Button
 ---@field pos Vector
 ---@field size Vector
@@ -13,8 +17,10 @@ local colors = require("colors")
 ---@class RouletteTable
 ---@field bids table<BidKey, (0)[]>
 ---@field data RouletteTableData
+---@field returns table<string, number> | nil
 ---@field highlight string
 ---@field buttons Button[]
+---@field number_bounding_box table<string, Rect>
 local RouletteTable = {
     cell_size = 50,
 }
@@ -335,6 +341,7 @@ function RouletteTable:clear_bids()
             self.bids[key][i] = 0
         end
     end
+    self.returns = nil
 end
 
 ---@param number string
@@ -467,6 +474,18 @@ function RouletteTable:start()
             self.data:bid_high(amount)
         end
     end
+
+    self:calculate_returns()
+end
+
+function RouletteTable:calculate_returns()
+    local returns = {}
+
+    for number_text, _ in pairs(number_props) do
+        returns[number_text] = self.data:get_return(number_text)
+    end
+
+    self.returns = returns
 end
 
 function RouletteTable:draw_bids()
@@ -556,12 +575,66 @@ end
 function RouletteTable:resize(cell_size)
     self.cell_size = cell_size
     self.font = love.graphics.newFont(self.cell_size / 4)
+    self:generate_bounding_box()
+end
+
+function RouletteTable:generate_bounding_box()
+    local cell_size = self.cell_size
+    local number_bounding_box = {}
+
+    number_bounding_box["00"] = {
+        pos = Vector.new(0, 0) * cell_size,
+        size = Vector.new(1, 1.5) * cell_size,
+    }
+
+    number_bounding_box["0"] = {
+        pos = Vector.new(0, 1.5) * cell_size,
+        size = Vector.new(1, 1.5) * cell_size,
+    }
+
+    for i = 1, 36 do
+        local x = math.floor((i - 1) / 3)
+        local y = (3 - i) % 3
+        local number_text = tostring(i)
+        number_bounding_box[number_text] = {
+            pos = Vector.new(x + 1, y) * cell_size,
+            size = Vector.new(1, 1) * cell_size,
+        }
+    end
+
+    self.number_bounding_box = number_bounding_box
+end
+
+---@param returns table<string, number>
+function RouletteTable:draw_returns(returns)
+    local cell_size = self.cell_size
+    local font_height = love.graphics.getFont():getHeight()
+
+    ---@param number_text string
+    ---@param return_amount number
+    local function draw_cell(number_text, return_amount)
+        if return_amount == 0 then
+            return
+        end
+        local bbox = self.number_bounding_box[number_text]
+        local x, y = bbox.pos:unpack()
+        local w, h = bbox.size:unpack()
+        love.graphics.setColor({ 1, 0.9, 0, 1 })
+        love.graphics.printf(return_amount, x, y + h, w, "right", 0, 1, 1, 0, font_height)
+    end
+
+    for number_text, return_value in pairs(returns) do
+        draw_cell(number_text, return_value)
+    end
 end
 
 function RouletteTable:draw()
     love.graphics.setFont(self.font)
     self:draw_buttons()
     self:draw_bids()
+    if self.returns ~= nil then
+        self:draw_returns(self.returns)
+    end
 end
 
 return RouletteTable
