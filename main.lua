@@ -123,6 +123,37 @@ end
 ---@type nil|Vector
 local hover_pos = nil
 
+local function bid(cell, bid_size)
+    bid_size = math.min(money, bid_size)
+    if bid_size == 0 then
+        return
+    end
+    local removed = roulette_table:add_bid(cell, bid_size)
+    money = money + removed
+    total_bid = total_bid - removed
+    user_bidded(nil)
+end
+
+function love.wheelmoved(x, y)
+    local positioning = get_positioning()
+    local mouse = Vector.new(love.mouse.getPosition())
+    if y ~= 0 then
+        local cell = roulette_table:get_cell(mouse - positioning.roulette_table.pos)
+        if roulette.rolling then
+            return
+        end
+        if cell == nil then
+            return
+        end
+        local bid_size = 10
+        if y > 0 then
+            bid(cell, bid_size)
+        else
+            bid(cell, -bid_size)
+        end
+    end
+end
+
 function love.mousereleased(x, y, button)
     local positioning = get_positioning()
     local mouse = Vector.new(x, y)
@@ -135,12 +166,7 @@ function love.mousereleased(x, y, button)
             return
         end
         local bid_size = 10
-        if money >= bid_size then
-            roulette_table:add_bid(cell, bid_size)
-            money = money - bid_size
-            total_bid = total_bid + bid_size
-            user_bidded(nil)
-        end
+        bid(cell, bid_size)
     end
 end
 

@@ -19,6 +19,7 @@ local colors = require("colors")
 ---@field data RouletteTableData
 ---@field returns table<string, number> | nil
 ---@field highlight string
+---@field total_bid number
 ---@field buttons Button[]
 ---@field number_bounding_box table<string, Rect>
 local RouletteTable = {
@@ -180,6 +181,7 @@ function RouletteTable.new()
         low = single_zero(),
         high = single_zero(),
     }
+    new.total_bid = 0
 
     return new
 end
@@ -324,15 +326,16 @@ end
 
 ---@param cell CompleteBidKey
 ---@param amount number
+---@return number
 function RouletteTable:add_bid(cell, amount)
     local name, index = unpack(cell)
-    self.bids[name][index] = self.bids[name][index] + amount
-end
 
----@param cell CompleteBidKey
-function RouletteTable:clear_bid(cell)
-    local name, index = unpack(cell)
-    self.bids[name][index] = 0
+    local previous = self.bids[name][index]
+    local new = math.max(previous + amount, 0)
+    self.bids[name][index] = new
+    local bidded = new - previous
+    self.total_bid = self.total_bid + bidded
+    return -bidded
 end
 
 function RouletteTable:clear_bids()
@@ -342,6 +345,7 @@ function RouletteTable:clear_bids()
         end
     end
     self.returns = nil
+    self.total_bid = 0
 end
 
 ---@param number string
@@ -620,7 +624,9 @@ function RouletteTable:draw_returns(returns)
         local x, y = bbox.pos:unpack()
         local w, h = bbox.size:unpack()
         love.graphics.setColor({ 1, 0.9, 0, 1 })
-        love.graphics.printf(return_amount, x, y + h, w, "right", 0, 1, 1, 0, font_height)
+        local roi = return_amount / self.total_bid
+        local roi_string = string.format("%.2f", roi)
+        love.graphics.printf(return_amount .. " (x" .. roi_string .. ")", x, y + h, w, "right", 0, 1, 1, 0, font_height * 2)
     end
 
     for number_text, return_value in pairs(returns) do
